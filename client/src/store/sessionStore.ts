@@ -117,7 +117,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   loadAssessment: async (slug) => {
     set({ error: null });
     try {
-      return await api.get<AssessmentDefinition>(`/assessments/${slug}`);
+      const definition = await api.get<AssessmentDefinition>(`/assessments/${slug}`);
+      // `next()` clamps against `definition.totalItems`, so this must be
+      // stored — returning it without persisting left the index pinned at 0
+      // and the questionnaire unable to advance.
+      set({ definition });
+      return definition;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Could not load assessment' });
       return null;

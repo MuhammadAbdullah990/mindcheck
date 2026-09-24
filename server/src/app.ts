@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import routes from './routes/index.js';
 import { attachIdentity } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
-import { env, isProd } from './config/env.js';
+import { env } from './config/env.js';
 
 export function createApp() {
   const app = express();
@@ -24,12 +24,20 @@ export function createApp() {
   app.use(express.json({ limit: '256kb' }));
   app.use(express.urlencoded({ extended: false, limit: '256kb' }));
 
-  app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-  }));
+  // 100 requests per 15 minutes is right in production — it blunts credential
+  // stuffing and scraping. Under NODE_ENV=test the whole E2E suite shares one
+  // address, so the budget would be spent on the first few tests and the rest
+  // would fail on 429s that say nothing about the app.
+  if (env.NODE_ENV !== 'test') {
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 100,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+      }),
+    );
+  }
 
   app.use(attachIdentity);
 

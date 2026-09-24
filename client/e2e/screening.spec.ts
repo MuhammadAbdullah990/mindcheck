@@ -10,11 +10,27 @@ import { test, expect, type Page } from '@playwright/test';
 /** Answers all 9 PHQ-9 questions, using the given value for each. */
 async function answerPhq9(page: Page, value: number) {
   for (let i = 0; i < 9; i++) {
+    await expect(page.getByRole("progressbar", { name: `Question ${i + 1} of 9` })).toBeVisible();
+
     // The options are buttons; index 0..3 maps to answer values 0..3.
-    await page.getByRole('button', { name: /^(Not at all|Several days|More than half|Nearly every day)/ }).nth(value).click();
-    // Auto-advance runs on all but the last question.
-    if (i < 8) await page.waitForTimeout(150);
+    await page
+      .getByRole('button', { name: /^(Not at all|Several days|More than half|Nearly every day)/ })
+      .nth(value)
+      .click();
   }
+}
+
+/** Answers PHQ-9 items 1–8 with 0, then answers item 9 with the given value. */
+async function answerPhq9WithQ9(page: Page, q9Value: number) {
+  for (let i = 0; i < 8; i++) {
+    await expect(page.getByRole("progressbar", { name: `Question ${i + 1} of 9` })).toBeVisible();
+    await page.getByRole('button', { name: 'Not at all' }).click();
+  }
+  await expect(page.getByRole("progressbar", { name: "Question 9 of 9" })).toBeVisible();
+  await page
+    .getByRole('button', { name: /^(Not at all|Several days|More than half|Nearly every day)/ })
+    .nth(q9Value)
+    .click();
 }
 
 test.describe('anonymous screening', () => {
@@ -23,7 +39,13 @@ test.describe('anonymous screening', () => {
   });
 
   test('completes a PHQ-9 and shows the result', async ({ page }) => {
-    await page.getByRole('link', { name: /PHQ-9/ }).first().click();
+    // The card's link is labelled "Start"; the instrument name is a heading
+    // inside the card, so scope the link to the card that names PHQ-9.
+    await page
+      .getByRole('article')
+      .filter({ has: page.getByRole('heading', { name: 'PHQ-9' }) })
+      .getByRole('link', { name: 'Start' })
+      .click();
     await expect(page.getByRole('heading', { name: 'PHQ-9' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Begin screening' }).click();
@@ -43,13 +65,14 @@ test.describe('anonymous screening', () => {
     await page.getByRole('button', { name: 'Begin screening' }).click();
 
     // Answer Q1–Q8 with 0, then endorse Q9 with the lowest non-zero value.
-    await answerPhq9(page, 0);
-    // The final question is now on screen; endorse the self-harm item.
-    await page.getByRole('button', { name: /^Several days/ }).click();
+    await answerPhq9WithQ9(page, 1);
 
     // The crisis alert must appear immediately, before the user even finishes.
-    await expect(page.getByRole('alert')).toContainText('not alone in this');
-    await expect(page.getByText('988')).toBeVisible();
+    // Scope to the alert itself: the persistent header banner also offers 988,
+    // so an unscoped `getByText('988')` matches two elements.
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('not alone in this');
+    await expect(alert.getByRole('link', { name: /988/ })).toBeVisible();
 
     await page.getByRole('button', { name: 'See my results' }).click();
     await expect(page).toHaveURL(/\/results\//, { timeout: 15_000 });
@@ -69,11 +92,12 @@ test.describe('anonymous screening', () => {
     await page.goto('/assessment/phq9');
     await page.getByRole('button', { name: 'Begin screening' }).click();
 
-    // Answer 8 of 9, then jump back to the last one via the jump grid.
+    // Answer 8 of 9 and stop there.
     for (let i = 0; i < 8; i++) {
-      await page.getByRole('button', { name: /^Not at all/ }).click();
-      await page.waitForTimeout(120);
+      await expect(page.getByRole("progressbar", { name: `Question ${i + 1} of 9` })).toBeVisible();
+      await page.getByRole('button', { name: 'Not at all' }).click();
     }
+    await expect(page.getByRole("progressbar", { name: "Question 9 of 9" })).toBeVisible();
     // The "See my results" button is disabled until every question is answered.
     await expect(page.getByRole('button', { name: 'See my results' })).toBeDisabled();
   });

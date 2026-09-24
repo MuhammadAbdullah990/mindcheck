@@ -18,17 +18,32 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Fall back to a locally installed Chrome/Edge when Playwright's own
+        // browser download is unavailable (corporate networks, offline CI).
+        // Override with PLAYWRIGHT_CHANNEL=chromium to use the bundled build.
+        ...(process.env.PLAYWRIGHT_CHANNEL
+          ? { channel: process.env.PLAYWRIGHT_CHANNEL }
+          : { channel: 'chrome' }),
+      },
+    },
+  ],
 
   webServer: [
     {
-      command: 'npm run dev:server',
+      // These run with cwd = client/, so they cannot use the root workspace
+      // scripts (`npm run dev:server`); call the workspace scripts directly.
+      command: 'npm run dev --workspace server',
       url: 'http://localhost:3001/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
-      command: 'npm run dev:client',
+      command: 'npm run dev',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
