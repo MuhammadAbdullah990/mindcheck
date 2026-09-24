@@ -1,0 +1,33 @@
+{
+  "name": "mindcheck",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MindCheck — free, privacy-first mental health screening (PHQ-9, GAD-7, PSS-10, DASS-21)",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n client,server -c cyan,green \"npm:dev:client\" \"npm:dev:server\"",
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace server && npm run build --workspace client",
+    "test": "npm run test --workspace client && npm run test --workspace server",
+    "test:e2e": "npm run test:e2e --workspace client",
+    "typecheck": "npm run typecheck --workspace client && npm run typecheck --workspace server",
+    "db:generate": "npm run prisma:generate --workspace server",
+    "db:migrate": "npm run prisma:migrate --workspace server",
+    "db:deploy": "npm run prisma:deploy --workspace server",
+    "db:seed": "npm run prisma:seed --workspace server",
+    "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true
+  }
+}
