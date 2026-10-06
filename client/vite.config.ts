@@ -12,7 +12,7 @@ export default defineConfig({
     alias: {
       // Questionnaire + scoring definitions live in shared/ so the client and
       // the API can never drift apart on question text or severity bands.
-      '@shared': path.resolve(import.meta.dirname, '../shared'),
+      '@shared': path.resolve(import.meta.dirname, './src/shared') || path.resolve(import.meta.dirname, '../shared'),
     },
   },
   test: {

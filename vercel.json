@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm install && cd client && npm run build",
+  "buildCommand": "cp -r shared client/src/shared && cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
   "rewrites": [
     {

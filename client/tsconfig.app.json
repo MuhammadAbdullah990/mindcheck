@@ -25,7 +25,7 @@
     /* Path aliases. `paths` without `baseUrl` (deprecated in TS 6) — the
        substitution is resolved relative to this config file. */
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["./src/shared/*", "../shared/*"]
     }
   },
   "include": ["src", "../shared"]
