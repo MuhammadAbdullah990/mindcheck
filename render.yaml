@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mindcheck-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm ci && npm run db:generate && npm run build --workspace server
+    startCommand: npm run start --workspace server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false
+      - key: CLIENT_URL
+        sync: false
